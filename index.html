@@ -1,0 +1,1019 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>À Escola de Ônibus — Livro Interativo</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;700;800&family=Lora:ital,wght@0,500;0,600;1,600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --leather: #6b4023;
+    --leather-dark: #46291a;
+    --leather-light: #8a5936;
+    --gold: #cfa646;
+    --gold-soft: #e6c878;
+    --paper: #fffaf0;
+    --ink: #3d2b1f;
+    --accent: #d9724c;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; height:100%;
+    background: radial-gradient(ellipse at center, #362a3f 0%, #1b1420 70%, #100b13 100%);
+    font-family:'Lora', serif;
+    color:var(--ink);
+    overflow:hidden;
+  }
+  body{
+    display:flex; align-items:center; justify-content:center;
+    min-height:100vh; perspective: 3000px;
+    padding: 1.5vh 1.5vw;
+  }
+
+  .stage{
+    position:relative;
+    display:flex; flex-direction:column; align-items:stretch;
+    gap: 1vh;
+    width:min(94vw, calc((90vh - 3.4rem) * 1.32));
+  }
+
+  .book{
+    position:relative;
+    border-radius:14px;
+    background: linear-gradient(160deg, var(--leather-light), var(--leather) 55%, var(--leather-dark));
+    box-shadow: 0 30px 70px rgba(0,0,0,.55), 0 8px 18px rgba(0,0,0,.4), inset 0 0 0 2px rgba(207,166,70,.25);
+    padding: 5%;
+  }
+  .book::before{
+    content:""; position:absolute; inset:0; border-radius:14px; pointer-events:none;
+    background-image: repeating-linear-gradient(115deg, rgba(255,255,255,.035) 0 2px, transparent 2px 6px);
+  }
+
+  .page-block{
+    position:relative;
+    padding: 1.1%;
+    border-radius:8px;
+    overflow:hidden;
+    background: linear-gradient(160deg, #f4ead0, #e9dcb8);
+    box-shadow: 0 3px 8px rgba(0,0,0,.35), 0 18px 32px rgba(0,0,0,.20), inset 0 0 0 1px rgba(0,0,0,.06);
+  }
+
+  .pages-stack{
+    position:relative;
+    width:100%;
+    aspect-ratio: 1800 / 1199;
+    perspective:2800px;
+    isolation:isolate;
+  }
+  .pages-stack::before,
+  .pages-stack::after{
+    content:"";
+    position:absolute;
+    top:1.2%; bottom:1.2%;
+    width:.55%;
+    z-index:90;
+    pointer-events:none;
+    opacity:.28;
+  }
+  .pages-stack::before{ left:.25%; background:linear-gradient(90deg,rgba(0,0,0,.45),transparent); }
+  .pages-stack::after{ right:.25%; background:linear-gradient(270deg,rgba(0,0,0,.45),transparent); }
+
+
+  .leaf{
+    position:absolute; inset:0;
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+    transform:none;
+    transition:opacity .18s ease;
+  }
+  .leaf.active{
+    opacity:1;
+    visibility:visible;
+    pointer-events:auto;
+    z-index:2 !important;
+  }
+
+  .face{
+    position:absolute; inset:0;
+    border-radius:5px;
+    overflow:hidden;
+    background:var(--paper);
+    box-shadow: inset 0 0 20px rgba(0,0,0,.20);
+  }
+  .face.back{ display:none; }
+
+  .leaf-shadow{ display:none; }
+
+  /* base shown underneath the sheet while it is turning */
+  .turn-base{
+    position:absolute; inset:0;
+    z-index:110;
+    pointer-events:none;
+    overflow:hidden;
+  }
+  .turn-base-half{
+    position:absolute; top:0; bottom:0; width:50%;
+    overflow:hidden;
+    background:var(--paper);
+  }
+  .turn-base-half.left{ left:0; }
+  .turn-base-half.right{ right:0; }
+  .turn-base-half .page-snapshot{ top:0; bottom:0; }
+
+  /* realistic half-page turning layer */
+  .turn-layer{
+    position:absolute; inset:0;
+    z-index:120;
+    pointer-events:none;
+    perspective:2800px;
+    overflow:visible;
+  }
+  .turn-page{
+    position:absolute;
+    top:0; bottom:0;
+    width:50%;
+    transform-style:preserve-3d;
+    -webkit-transform-style:preserve-3d;
+    will-change:transform;
+  }
+  .turn-page.next{ left:50%; transform-origin:left center; }
+  .turn-page.prev{ left:0; transform-origin:right center; }
+  .turn-page.next.turning{ animation:turnNext .95s cubic-bezier(.58,.02,.22,1) forwards; }
+  .turn-page.prev.turning{ animation:turnPrev .95s cubic-bezier(.58,.02,.22,1) forwards; }
+
+  .turn-side{
+    position:absolute; inset:0;
+    overflow:hidden;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    transform-style:preserve-3d;
+    -webkit-transform-style:preserve-3d;
+    background:var(--paper);
+    box-shadow:0 8px 24px rgba(0,0,0,.28);
+  }
+  /* Um pequeno translateZ impede o Chrome de misturar frente e verso
+     exatamente quando a folha passa pelos 90 graus. */
+  .turn-side.front{ transform:rotateY(0deg) translateZ(.2px); }
+  .turn-side.back{ transform:rotateY(180deg) translateZ(.2px); }
+
+  .turn-side::after{
+    content:"";
+    position:absolute; inset:0;
+    pointer-events:none;
+    opacity:.25;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+  }
+  .turn-page.next .turn-side.front::after{
+    background:linear-gradient(90deg,rgba(0,0,0,.36),transparent 20%,transparent 76%,rgba(255,255,255,.16));
+  }
+  .turn-page.next .turn-side.back::after{
+    background:linear-gradient(90deg,rgba(255,255,255,.16),transparent 22%,rgba(0,0,0,.30));
+  }
+  .turn-page.prev .turn-side.front::after{
+    background:linear-gradient(90deg,rgba(255,255,255,.16),transparent 22%,rgba(0,0,0,.34));
+  }
+  .turn-page.prev .turn-side.back::after{
+    background:linear-gradient(90deg,rgba(0,0,0,.30),transparent 22%,rgba(255,255,255,.16));
+  }
+
+  .turn-page.next.turning .turn-side.front::after,
+  .turn-page.prev.turning .turn-side.front::after{
+    animation:frontPaperShade .95s ease-in-out forwards;
+  }
+  .turn-page.next.turning .turn-side.back::after,
+  .turn-page.prev.turning .turn-side.back::after{
+    animation:backPaperShade .95s ease-in-out forwards;
+  }
+
+  .fold-shadow{
+    position:absolute;
+    top:0; bottom:0;
+    width:18%;
+    z-index:1;
+    pointer-events:none;
+    opacity:0;
+  }
+  .fold-shadow.next{
+    left:50%;
+    transform-origin:left center;
+    background:linear-gradient(90deg,rgba(0,0,0,.38),rgba(0,0,0,.14) 28%,transparent 100%);
+    animation:foldShadowNext .95s ease-in-out forwards;
+  }
+  .fold-shadow.prev{
+    right:50%;
+    transform-origin:right center;
+    background:linear-gradient(270deg,rgba(0,0,0,.38),rgba(0,0,0,.14) 28%,transparent 100%);
+    animation:foldShadowPrev .95s ease-in-out forwards;
+  }
+
+  .page-snapshot{
+    position:absolute;
+    top:0; bottom:0;
+    width:200%;
+    overflow:hidden;
+  }
+  .page-snapshot.left-half{ left:0; }
+  .page-snapshot.right-half{ left:-100%; }
+  .page-snapshot > .face{
+    display:block !important;
+    width:100%; height:100%;
+    pointer-events:none !important;
+  }
+
+  /* Não use filter na própria folha: filter achata o preserve-3d e faz
+     a frente aparecer espelhada através do verso em alguns navegadores. */
+  @keyframes turnNext{
+    0%{ transform:rotateY(0deg); }
+    100%{ transform:rotateY(-180deg); }
+  }
+  @keyframes turnPrev{
+    0%{ transform:rotateY(0deg); }
+    100%{ transform:rotateY(180deg); }
+  }
+  @keyframes frontPaperShade{
+    0%{ opacity:.18; }
+    48%{ opacity:.82; }
+    100%{ opacity:.12; }
+  }
+  @keyframes backPaperShade{
+    0%{ opacity:.10; }
+    52%{ opacity:.78; }
+    100%{ opacity:.18; }
+  }
+  @keyframes foldShadowNext{
+    0%,100%{ opacity:0; transform:scaleX(.08); }
+    48%{ opacity:.82; transform:scaleX(1); }
+  }
+  @keyframes foldShadowPrev{
+    0%,100%{ opacity:0; transform:scaleX(.08); }
+    48%{ opacity:.82; transform:scaleX(1); }
+  }
+
+  .spread-bg{
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:cover; display:block;
+  }
+
+  .spine{
+    position:absolute; top:0; bottom:0; left:50%;
+    width:2.4%; transform:translateX(-50%);
+    background: linear-gradient(90deg, rgba(0,0,0,.22), rgba(0,0,0,0) 30%, rgba(0,0,0,0) 70%, rgba(0,0,0,.22));
+    z-index:5; pointer-events:none;
+  }
+  .spine::before, .spine::after{ content:""; position:absolute; top:0; bottom:0; width:1px; background: rgba(0,0,0,.12); }
+  .spine::before{ left:0; } .spine::after{ right:0; }
+
+  /* page caption text */
+  .page-caption{
+    position:absolute; z-index:6;
+    display:flex; align-items:center; justify-content:center;
+    text-align:center;
+    font-family:'Baloo 2', sans-serif; font-weight:700;
+    color: var(--ink);
+    letter-spacing:.02em;
+    line-height:1.15;
+  }
+  .page-caption span{
+    background: rgba(255,255,255,.6);
+    padding: .28em .7em;
+    border-radius: 999px;
+    box-shadow: 0 3px 8px rgba(61,43,31,.18);
+  }
+
+  /* cards row */
+  .cards{ position:absolute; z-index:6; }
+  .cards img{
+    position:absolute; top:0; width:100%;
+    border-radius:8px;
+    box-shadow: 0 6px 14px rgba(61,43,31,.3);
+    cursor:pointer;
+    transition: transform .18s ease, box-shadow .18s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cards img:hover{ transform: translateY(-3%) scale(1.03); box-shadow: 0 10px 18px rgba(61,43,31,.35); }
+  .cards img:focus-visible{ outline: 3px solid var(--accent); outline-offset:2px; }
+  @keyframes cardPop{
+    0%{ transform: scale(1) rotate(0); }
+    40%{ transform: scale(1.12) rotate(-2deg); }
+    70%{ transform: scale(.97) rotate(1deg); }
+    100%{ transform: scale(1) rotate(0); }
+  }
+  .cards img.pop{ animation: cardPop .5s ease; }
+
+  /* school cutout */
+  .escola-cut{
+    position:absolute; z-index:4; cursor:pointer;
+    transform-origin: 50% 92%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .escola-cut:hover{ filter:brightness(1.05); }
+  @keyframes growShrink{
+    0%{ transform: scale(1); } 35%{ transform: scale(1.14); }
+    62%{ transform: scale(.95); } 100%{ transform: scale(1); }
+  }
+  .escola-cut.pulse{ animation: growShrink .7s ease; }
+
+  /* bus sticker */
+  .bus-wrap{
+    position:absolute; z-index:6;
+    filter: drop-shadow(0 10px 10px rgba(0,0,0,.28));
+  }
+  .bus-img{
+    position:relative; width:100%; display:block;
+    cursor:pointer; transform-origin:50% 60%;
+    -webkit-tap-highlight-color: transparent;
+  }
+  @keyframes busTremble{
+    0%,100%{ transform: translate(0,0) rotate(0); }
+    15%{ transform: translate(-1.4%,0) rotate(-1deg); }
+    30%{ transform: translate(1.4%,.3%) rotate(1deg); }
+    45%{ transform: translate(-1.1%,0) rotate(-.7deg); }
+    60%{ transform: translate(1.1%,.2%) rotate(.7deg); }
+    75%{ transform: translate(-.5%,0) rotate(-.4deg); }
+    90%{ transform: translate(.4%,0) rotate(.2deg); }
+  }
+  .bus-img.tremble{ animation: busTremble .55s ease; }
+
+  .wheel{
+    position:absolute; cursor:pointer;
+    transform: translate(-50%,-50%); transform-origin:center;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .wheel.spin{ animation: spin .8s cubic-bezier(.3,.1,.2,1); }
+  .wheel-inner{ width:100%; display:block; }
+  @keyframes spin{ from{ transform: translate(-50%,-50%) rotate(0);} to{ transform: translate(-50%,-50%) rotate(360deg);} }
+
+  /* clouds */
+  .cloud{
+    position:absolute; z-index:3; cursor:pointer;
+    transition: filter .2s ease;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .cloud:hover{ filter:brightness(1.04); }
+  @keyframes cloudBounce{
+    0%,100%{ transform: translateY(0) scale(1); }
+    40%{ transform: translateY(-6%) scale(1.05); }
+    70%{ transform: translateY(2%) scale(.98); }
+  }
+  .cloud.bounce{ animation: cloudBounce .6s ease; }
+
+  /* airplane */
+  .plane-wrap{ position:absolute; z-index:6; }
+  .plane-img{
+    position:relative;
+    width:100%; display:block; cursor:pointer;
+    transform-origin:50% 50%;
+    filter: drop-shadow(0 12px 14px rgba(0,0,0,.22));
+    -webkit-tap-highlight-color: transparent;
+  }
+  @keyframes planeZoom{
+    0%{     transform: translate(0,0) rotate(0) scale(1); opacity:1; }
+    6%{     transform: translate(-1.5%,1%) rotate(-4deg) scale(1); opacity:1; }
+    12%{    transform: translate(1.5%,-1%) rotate(4deg) scale(1); opacity:1; }
+    18%{    transform: translate(-1%,.5%) rotate(-3deg) scale(1); opacity:1; }
+    24%{    transform: translate(1%,0) rotate(2deg) scale(1); opacity:1; }
+    40%{    transform: translate(95%,-55%) rotate(-6deg) scale(.75); opacity:1; }
+    48%{    transform: translate(160%,-95%) rotate(-6deg) scale(.4); opacity:0; }
+    82%{    transform: translate(160%,-95%) rotate(-6deg) scale(.4); opacity:0; }
+    92%{    transform: translate(0,0) rotate(0) scale(1.08); opacity:1; }
+    100%{   transform: translate(0,0) rotate(0) scale(1); opacity:1; }
+  }
+  .plane-img.zoom{ animation: planeZoom 2.1s cubic-bezier(.4,.05,.35,1); pointer-events:none; }
+
+  .zuum{
+    position:absolute; left:28%; top:25%; width:62%;
+    opacity:0; transform: scale(.9) rotate(-4deg);
+    transition: opacity .2s ease, transform .2s ease;
+    pointer-events:none; z-index:7;
+    filter: drop-shadow(0 6px 10px rgba(0,0,0,.25));
+  }
+  .zuum.show{ opacity:1; transform: scale(1.5) rotate(-4deg); }
+
+
+
+  /* ---------- PÁGINA DO PARQUE / BICICLETA ---------- */
+  .bike-wrap{
+    position:absolute;
+    /* Metade do tamanho original: 45.8% / 2 = 22.9%. */
+    left:63.65%;
+    top:64.5%;
+    width:22.9%;
+    transform:rotate(-6deg);
+    transform-origin:50% 50%;
+    aspect-ratio: 1148 / 741;
+    z-index:6;
+    filter:drop-shadow(0 10px 10px rgba(0,0,0,.23));
+    overflow:visible;
+  }
+
+  .bike-frame{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+    pointer-events:none;
+    z-index:7;
+  }
+
+  .bike-wheel{
+    position:absolute;
+    width:40%;
+    aspect-ratio:1;
+    transform:translate(-50%,-50%) rotate(0deg);
+    transform-origin:center;
+    cursor:pointer;
+    z-index:6;
+    border-radius:50%;
+    -webkit-tap-highlight-color:transparent;
+  }
+
+  .bike-wheel img{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+    pointer-events:none;
+  }
+
+  /* Posições calculadas sobre a imagem do quadro fornecida. */
+  .bike-wheel.rear{ left:3.9%; top:80.2%; }
+  .bike-wheel.front{ left:97.0%; top:94.8%; }
+
+  .bike-pedal{
+    position:absolute;
+    left:39.8%;
+    top:86.9%;
+    width:18%;
+    z-index:9;
+    transform:translate(-50%,-22%) rotate(0deg);
+    transform-origin:50% 22%;
+    pointer-events:none;
+  }
+
+  .bike-wheel:focus-visible{
+    outline:3px solid var(--accent);
+    outline-offset:4px;
+  }
+
+  .bike-wrap.spinning .bike-wheel{
+    animation:bikeWheelSpin 1.15s cubic-bezier(.32,.06,.18,1) forwards;
+  }
+
+  .bike-wrap.spinning .bike-pedal{
+    animation:bikePedalSpin 1.15s cubic-bezier(.32,.06,.18,1) forwards;
+  }
+
+  @keyframes bikeWheelSpin{
+    from{ transform:translate(-50%,-50%) rotate(0deg); }
+    to{ transform:translate(-50%,-50%) rotate(720deg); }
+  }
+
+  @keyframes bikePedalSpin{
+    from{ transform:translate(-50%,-22%) rotate(0deg); }
+    to{ transform:translate(-50%,-22%) rotate(720deg); }
+  }
+
+  /* ---------- COVER ---------- */
+  .cover-face{
+    background:
+      radial-gradient(ellipse at 30% 20%, rgba(255,255,255,.08), transparent 55%),
+      linear-gradient(155deg, var(--leather-light), var(--leather) 60%, var(--leather-dark));
+    display:flex; align-items:center; justify-content:center;
+  }
+  .cover-frame{
+    border: 3px solid var(--gold-soft);
+    border-radius:10px;
+    width:80%; height:76%;
+    display:flex; flex-direction:column; align-items:center; justify-content:center;
+    gap:2.2vh;
+    box-shadow: inset 0 0 0 6px rgba(207,166,70,.18);
+  }
+  .cover-face h1{
+    font-family:'Baloo 2', sans-serif; font-weight:800;
+    font-size: clamp(24px, 3.6vw, 50px);
+    color: var(--gold-soft); margin:0; text-align:center;
+    text-shadow: 0 2px 0 rgba(0,0,0,.3);
+  }
+  .cover-face .sub{ font-style:italic; color:var(--gold-soft); opacity:.85; font-size: clamp(12px, 1.4vw, 17px); }
+  .cover-face .bus-emblem{ width: clamp(64px, 8vw, 110px); filter: drop-shadow(0 6px 10px rgba(0,0,0,.4)); }
+  .open-hint{
+    font-family:'Baloo 2',sans-serif; font-size: clamp(11px, 1.1vw, 14px);
+    background: var(--gold-soft); color: var(--leather-dark);
+    padding: .55em 1.3em; border-radius: 999px; cursor:pointer; border:none;
+    box-shadow: 0 4px 10px rgba(0,0,0,.35); transition: transform .15s ease;
+  }
+  .open-hint:hover{ transform: translateY(-2px) scale(1.03); }
+
+  .end-face{
+    background: linear-gradient(160deg,#fbf3de,#efe2c3);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .end-face h2{
+    font-family:'Baloo 2',sans-serif; font-weight:700; color:var(--leather);
+    font-size: clamp(18px,2.6vw,32px);
+  }
+
+  .toolbar{
+    flex: 0 0 auto;
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'Baloo 2',sans-serif; font-size: clamp(11px,1.1vw,14px);
+  }
+  .toolbar .group{ display:flex; gap:.6em; align-items:center; }
+  .toolbar button{
+    background: rgba(255,255,255,.08); color: var(--gold-soft);
+    border:1px solid rgba(207,166,70,.5); padding:.4em .9em; border-radius: 999px; cursor:pointer;
+    font-family:'Baloo 2',sans-serif; font-size: inherit;
+  }
+  .toolbar button:disabled{ opacity:.3; cursor:default; }
+  .page-indicator{ color: var(--gold-soft); opacity:.75; }
+
+  @media (max-width: 760px){
+    .stage{ width:96vw; height:auto; }
+    .book{ padding:4%; }
+    .page-caption{ font-size: 11px !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="toolbar">
+    <div class="group">
+      <button id="prevBtn">← Voltar</button>
+      <button id="nextBtn">Virar página →</button>
+    </div>
+    <span class="page-indicator" id="pageIndicator"></span>
+    <button id="soundToggle">🔊 Som ligado</button>
+  </div>
+
+  <div class="book">
+   <div class="page-block">
+    <div class="pages-stack" id="pagesStack">
+
+      <!-- LEAF 0: COVER -->
+      <div class="leaf" id="leaf0" style="z-index:40;">
+        <div class="face front cover-face">
+          <div class="cover-frame">
+            <img class="bus-emblem" src="assets/onibus.png" alt="">
+            <h1>À Escola de Ônibus</h1>
+            <div class="sub">um livrinho para abrir, clicar e ouvir</div>
+            <button class="open-hint" id="openBtn">Abrir o livro →</button>
+          </div>
+        </div>
+        <div class="face back"></div>
+        <div class="leaf-shadow"></div>
+      </div>
+
+      <!-- LEAF 1: SPREAD A — à escola de ônibus -->
+      <div class="leaf" id="leaf1" style="z-index:30;">
+        <div class="face front">
+          <img class="spread-bg" src="assets/fundo.png" alt="Escola com pátio de recreio de um lado e playground do outro">
+          <div class="spine"></div>
+
+          <img id="escolaCut" class="escola-cut" src="assets/escola_cutout.png"
+               style="left:6.3%; top:19.0%; width:45%;"
+               tabindex="0" role="button" aria-label="Tocar na escola">
+
+          <div class="page-caption" style="left:7%; top:65%; width:38%; height:6%;">
+            <span>À ESCOLA VOU DE ÔNIBUS</span>
+          </div>
+
+          <div class="cards" style="left:10.5%; bottom:9.2%; width:9.6667%; height:19%;">
+            <img src="assets/vou_escola.png" tabindex="0" role="button" aria-label="Cartão: escola">
+          </div>
+          <div class="cards" style="left:21.1667%; bottom:9.2%; width:9.6667%; height:19%;">
+            <img src="assets/vou_vou.png" tabindex="0" role="button" aria-label="Cartão: vou">
+          </div>
+          <div class="cards" style="left:31.8333%; bottom:9.2%; width:9.6667%; height:19%;">
+            <img src="assets/vou_ônibus.png" tabindex="0" role="button" aria-label="Cartão: ônibus">
+          </div>
+
+          <div class="bus-wrap" style="left:51.5%; top:68.9%; width:48.3%;">
+            <img id="busImg" class="bus-img" src="assets/onibus.png" tabindex="0" role="button" aria-label="Tocar no ônibus">
+            <div class="wheel" style="left:18.95%; top:80.07%; width:13.7%;" tabindex="0" role="button" aria-label="Girar a roda">
+              <img class="wheel-inner" src="assets/pneu.png">
+            </div>
+            <div class="wheel" style="left:87.67%; top:81.34%; width:13.7%;" tabindex="0" role="button" aria-label="Girar a roda">
+              <img class="wheel-inner" src="assets/pneu.png">
+            </div>
+          </div>
+        </div>
+        <div class="face back"></div>
+        <div class="leaf-shadow"></div>
+      </div>
+
+      <!-- LEAF 2: SPREAD B — para longe de avião -->
+      <div class="leaf" id="leaf2" style="z-index:20;">
+        <div class="face front">
+          <img class="spread-bg" src="assets/ceu.jpg" alt="Céu azul com nuvens">
+          <div class="spine"></div>
+
+          <img class="cloud" src="assets/nuvem1.png" style="left:2.5%; top:6%; width:20%;" tabindex="0" role="button" aria-label="Nuvem">
+          <img class="cloud" src="assets/nuvem2.png" style="left:73%; top:9%; width:22%;" tabindex="0" role="button" aria-label="Nuvem">
+          <img class="cloud" src="assets/nuvem1.png" style="left:36%; top:44%; width:13%; opacity:.85;" tabindex="0" role="button" aria-label="Nuvem">
+          <img class="cloud" src="assets/nuvem2.png" style="left:44%; top:4%; width:13%; opacity:.9;" tabindex="0" role="button" aria-label="Nuvem">
+          <img class="cloud" src="assets/nuvem1.png" style="left:14%; top:36%; width:14%; opacity:.85;" tabindex="0" role="button" aria-label="Nuvem">
+          <img class="cloud" src="assets/nuvem2.png" style="left:58%; top:58%; width:13%; opacity:.75;" tabindex="0" role="button" aria-label="Nuvem">
+          <img class="cloud" src="assets/nuvem1.png" style="left:83%; top:48%; width:12%; opacity:.7;" tabindex="0" role="button" aria-label="Nuvem">
+
+          <div class="page-caption" style="left:6%; top:65%; width:40%; height:6%;">
+            <span>PARA LONGE VOU DE AVIÃO</span>
+          </div>
+
+          <div class="cards" style="left:10.5%; bottom:9.2%; width:9.6667%; height:19%;">
+            <img src="assets/CARD_LONGE.png" tabindex="0" role="button" aria-label="Cartão: longe">
+          </div>
+          <div class="cards" style="left:21.1667%; bottom:9.2%; width:9.6667%; height:19%;">
+            <img src="assets/CARD_VOU.png" tabindex="0" role="button" aria-label="Cartão: vou">
+          </div>
+          <div class="cards" style="left:31.8333%; bottom:9.2%; width:9.6667%; height:19%;">
+            <img src="assets/CARD_AVIAO.png" tabindex="0" role="button" aria-label="Cartão: avião">
+          </div>
+
+          <div class="plane-wrap" style="left:46%; top:30%; width:48%;">
+            <img id="planeImg" class="plane-img" src="assets/aviao.png" tabindex="0" role="button" aria-label="Tocar no avião">
+            <img id="zuum" class="zuum" src="assets/zuuum.png" alt="">
+          </div>
+        </div>
+        <div class="face back"></div>
+        <div class="leaf-shadow"></div>
+      </div>
+
+      <!-- LEAF 3: SPREAD C — ao parque de bicicleta -->
+      <div class="leaf" id="leaf3" style="z-index:10;">
+        <div class="face front">
+          <img class="spread-bg" src="assets/parque.png" alt="Parque infantil com árvores, gramado e caminho">
+          <div class="spine"></div>
+
+          <div class="page-caption" style="left:5.5%; top:63%; width:41%; height:6%;">
+            <span>AO PARQUE VOU DE BICICLETA</span>
+          </div>
+
+          <div class="cards" style="left:9.2%; bottom:8.2%; width:10.3%; height:20%;">
+            <img src="assets/CARD_PARQUE.png" tabindex="0" role="button" aria-label="Cartão: parque">
+          </div>
+          <div class="cards" style="left:21.0%; bottom:8.2%; width:10.3%; height:20%;">
+            <img src="assets/CARD_VOU.png" tabindex="0" role="button" aria-label="Cartão: vou">
+          </div>
+          <div class="cards" style="left:32.8%; bottom:8.2%; width:10.3%; height:20%;">
+            <img src="assets/CARD_BIKE.png" tabindex="0" role="button" aria-label="Cartão: bicicleta">
+          </div>
+
+          <div class="bike-wrap" id="bikeWrap" aria-label="Bicicleta interativa">
+            <div class="bike-wheel rear" tabindex="0" role="button" aria-label="Girar as duas rodas e o pedal">
+              <img src="assets/roda.png" alt="">
+            </div>
+
+            <div class="bike-wheel front" tabindex="0" role="button" aria-label="Girar as duas rodas e o pedal">
+              <img src="assets/roda.png" alt="">
+            </div>
+
+            <img class="bike-frame" src="assets/bike.png" alt="Bicicleta vermelha">
+            <img class="bike-pedal" src="assets/pedal.png" alt="">
+          </div>
+        </div>
+        <div class="face back"></div>
+        <div class="leaf-shadow"></div>
+      </div>
+
+      <!-- LEAF 4: END PLACEHOLDER -->
+      <div class="leaf" id="leaf4" style="z-index:5;">
+        <div class="face front end-face">
+          <h2>continua…</h2>
+        </div>
+        <div class="face back"></div>
+      </div>
+
+    </div>
+   </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const leaves = [...document.querySelectorAll('.leaf')];
+  const total = leaves.length;
+  let current = 0;
+  let soundOn = true;
+  let turning = false;
+
+  const prevBtn = document.getElementById('prevBtn');
+  const nextBtn = document.getElementById('nextBtn');
+  const openBtn = document.getElementById('openBtn');
+  const soundToggle = document.getElementById('soundToggle');
+  const pageIndicator = document.getElementById('pageIndicator');
+  const pagesStack = document.getElementById('pagesStack');
+
+  function stripCloneState(root){
+    root.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
+    root.querySelectorAll('[tabindex]').forEach(el=>el.removeAttribute('tabindex'));
+    root.querySelectorAll('[role]').forEach(el=>el.removeAttribute('role'));
+    root.querySelectorAll('button').forEach(el=>el.disabled=true);
+    root.querySelectorAll('*').forEach(el=>el.style.pointerEvents='none');
+    return root;
+  }
+
+  function snapshot(index, half){
+    const snap = document.createElement('div');
+    snap.className = 'page-snapshot ' + (half === 'left' ? 'left-half' : 'right-half');
+    const face = stripCloneState(leaves[index].querySelector('.face.front').cloneNode(true));
+    snap.appendChild(face);
+    return snap;
+  }
+
+  function showSpread(index){
+    leaves.forEach((leaf,i)=>leaf.classList.toggle('active', i===index));
+  }
+
+  function render(){
+    showSpread(current);
+    prevBtn.disabled = current === 0 || turning;
+    nextBtn.disabled = current === total - 1 || turning;
+    nextBtn.textContent = current === total - 1 ? 'Fim' : (current === 0 ? 'Abrir o livro →' : 'Virar página →');
+    pageIndicator.textContent = current === 0 ? 'capa' : (current === total-1 ? 'fim' : 'páginas ' + (current*2-1) + '–' + (current*2));
+  }
+
+  function makeTurn(direction){
+    if(turning) return;
+    const nextIndex = direction === 'next' ? current + 1 : current - 1;
+    if(nextIndex < 0 || nextIndex >= total) return;
+
+    turning = true;
+    render();
+
+    const base = document.createElement('div');
+    base.className = 'turn-base';
+    const baseLeft = document.createElement('div');
+    baseLeft.className = 'turn-base-half left';
+    const baseRight = document.createElement('div');
+    baseRight.className = 'turn-base-half right';
+
+    if(direction === 'next'){
+      baseLeft.appendChild(snapshot(current,'left'));
+      baseRight.appendChild(snapshot(nextIndex,'right'));
+    }else{
+      baseLeft.appendChild(snapshot(nextIndex,'left'));
+      baseRight.appendChild(snapshot(current,'right'));
+    }
+
+    base.append(baseLeft, baseRight);
+    pagesStack.appendChild(base);
+
+    const layer = document.createElement('div');
+    layer.className = 'turn-layer';
+    const page = document.createElement('div');
+    page.className = 'turn-page ' + direction;
+    const front = document.createElement('div');
+    front.className = 'turn-side front';
+    const back = document.createElement('div');
+    back.className = 'turn-side back';
+
+    if(direction === 'next'){
+      front.appendChild(snapshot(current,'right'));
+      back.appendChild(snapshot(nextIndex,'left'));
+    }else{
+      front.appendChild(snapshot(current,'left'));
+      back.appendChild(snapshot(nextIndex,'right'));
+    }
+
+    const foldShadow = document.createElement('div');
+    foldShadow.className = 'fold-shadow ' + direction;
+
+    page.append(front,back);
+    layer.append(foldShadow,page);
+    pagesStack.appendChild(layer);
+
+    let finished = false;
+    const finishTurn = ()=>{
+      if(finished) return;
+      finished = true;
+      current = nextIndex;
+      showSpread(current);
+      layer.remove();
+      base.remove();
+      turning = false;
+      render();
+    };
+
+    page.addEventListener('animationend', finishTurn, {once:true});
+    requestAnimationFrame(()=>requestAnimationFrame(()=>page.classList.add('turning')));
+
+    // Segurança para navegadores que eventualmente não disparem animationend.
+    setTimeout(finishTurn, 1100);
+  }
+
+  function next(){ makeTurn('next'); }
+  function prev(){ makeTurn('prev'); }
+
+  nextBtn.addEventListener('click', next);
+  prevBtn.addEventListener('click', prev);
+  openBtn.addEventListener('click', (e)=>{ e.stopPropagation(); next(); });
+
+  pagesStack.addEventListener('click', (e)=>{
+    if(turning || e.target.closest('button, .escola-cut, .bus-img, .wheel, .cards img, .cloud, .plane-img, .bike-wheel')) return;
+    const rect = pagesStack.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    if(x > rect.width * .88) next();
+    if(x < rect.width * .12) prev();
+  });
+
+  render();
+
+  soundToggle.addEventListener('click', ()=>{
+    soundOn = !soundOn;
+    soundToggle.textContent = soundOn ? '🔊 Som ligado' : '🔈 Som desligado';
+  });
+
+  document.addEventListener('keydown', (e)=>{
+    if(e.target.closest('.escola-cut, .bus-img, .wheel, .cards img, .cloud, .plane-img, .bike-wheel, button')) return;
+    if(e.key === 'ArrowRight') next();
+    if(e.key === 'ArrowLeft') prev();
+  });
+
+  /* ---------------- SOUND (synthesized, no external files) --------------- */
+  let actx = null;
+  function ctx(){
+    if(!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+    if(actx.state === 'suspended') actx.resume();
+    return actx;
+  }
+
+  function playBell(){
+    if(!soundOn) return;
+    const c = ctx(); const now = c.currentTime;
+    [1568, 2093, 3136].forEach((freq, idx)=>{
+      const osc = c.createOscillator(); const gain = c.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      const start = now + idx*0.02;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(idx===0? 0.35 : 0.15, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 1.1);
+      osc.connect(gain).connect(c.destination);
+      osc.start(start); osc.stop(start + 1.15);
+    });
+  }
+
+  function playEngine(){
+    if(!soundOn) return;
+    const c = ctx(); const now = c.currentTime; const dur = 0.6;
+    const bufferSize = c.sampleRate * dur;
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * 0.5; }
+    const noise = c.createBufferSource(); noise.buffer = buffer;
+    const noiseFilter = c.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.setValueAtTime(220, now);
+    noiseFilter.frequency.linearRampToValueAtTime(140, now+dur);
+    const noiseGain = c.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.5, now+0.05);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+    noise.connect(noiseFilter).connect(noiseGain).connect(c.destination);
+    noise.start(now); noise.stop(now+dur);
+
+    const osc = c.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(70, now);
+    osc.frequency.linearRampToValueAtTime(95, now+0.12);
+    osc.frequency.linearRampToValueAtTime(60, now+dur);
+    const oscGain = c.createGain();
+    oscGain.gain.setValueAtTime(0.0001, now);
+    oscGain.gain.linearRampToValueAtTime(0.22, now+0.05);
+    oscGain.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+    osc.connect(oscGain).connect(c.destination);
+    osc.start(now); osc.stop(now+dur);
+  }
+
+  function playPop(){
+    if(!soundOn) return;
+    const c = ctx(); const now = c.currentTime;
+    const osc = c.createOscillator(); const gain = c.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(880, now+0.12);
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.25, now+0.02);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now+0.22);
+    osc.connect(gain).connect(c.destination);
+    osc.start(now); osc.stop(now+0.25);
+  }
+
+  function playWhoosh(){
+    if(!soundOn) return;
+    const c = ctx(); const now = c.currentTime; const dur = 0.7;
+    const bufferSize = c.sampleRate * dur;
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1); }
+    const noise = c.createBufferSource(); noise.buffer = buffer;
+    const filter = c.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.Q.value = 0.9;
+    filter.frequency.setValueAtTime(300, now);
+    filter.frequency.linearRampToValueAtTime(2600, now+dur*0.55);
+    filter.frequency.linearRampToValueAtTime(500, now+dur);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.5, now+dur*0.4);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+    noise.connect(filter).connect(gain).connect(c.destination);
+    noise.start(now); noise.stop(now+dur);
+  }
+
+  /* ---------------- INTERACTIONS --------------- */
+  function bindTap(el, fn){
+    el.addEventListener('click', (e)=>{ e.stopPropagation(); fn(); });
+    el.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); e.stopPropagation(); fn(); } });
+  }
+
+  const escolaCut = document.getElementById('escolaCut');
+  bindTap(escolaCut, ()=>{
+    escolaCut.classList.remove('pulse'); void escolaCut.offsetWidth;
+    escolaCut.classList.add('pulse');
+    playBell();
+  });
+
+  const busImg = document.getElementById('busImg');
+  bindTap(busImg, ()=>{
+    busImg.classList.remove('tremble'); void busImg.offsetWidth;
+    busImg.classList.add('tremble');
+    playEngine();
+  });
+
+  document.querySelectorAll('.wheel').forEach(w=>{
+    bindTap(w, ()=>{
+      w.classList.remove('spin'); void w.offsetWidth;
+      w.classList.add('spin');
+    });
+  });
+
+  document.querySelectorAll('.cards img').forEach(c=>{
+    bindTap(c, ()=>{
+      c.classList.remove('pop'); void c.offsetWidth;
+      c.classList.add('pop');
+      playPop();
+    });
+  });
+
+
+  /* Ao clicar em qualquer pneu da bicicleta, as duas rodas e o pedal giram. */
+  const bikeWrap = document.getElementById('bikeWrap');
+  let bikeSpinTimer = null;
+
+  function spinWholeBike(){
+    if(!bikeWrap) return;
+    clearTimeout(bikeSpinTimer);
+    bikeWrap.classList.remove('spinning');
+    void bikeWrap.offsetWidth;
+    bikeWrap.classList.add('spinning');
+
+    bikeSpinTimer = setTimeout(()=>{
+      bikeWrap.classList.remove('spinning');
+    }, 1200);
+  }
+
+  document.querySelectorAll('.bike-wheel').forEach(wheel=>{
+    bindTap(wheel, spinWholeBike);
+  });
+
+  document.querySelectorAll('.cloud').forEach(cl=>{
+    bindTap(cl, ()=>{
+      cl.classList.remove('bounce'); void cl.offsetWidth;
+      cl.classList.add('bounce');
+    });
+  });
+
+  const planeImg = document.getElementById('planeImg');
+  const zuum = document.getElementById('zuum');
+  let planeBusy = false;
+  bindTap(planeImg, ()=>{
+    if(planeBusy) return;
+    planeBusy = true;
+    planeImg.classList.remove('zoom'); void planeImg.offsetWidth;
+    planeImg.classList.add('zoom');
+    setTimeout(()=> playWhoosh(), 2100*0.22);
+
+    setTimeout(()=>{
+      zuum.classList.add('show');
+    }, 2100*0.48);
+
+    setTimeout(()=>{
+      zuum.classList.remove('show');
+    }, 2100*0.48 + 500);
+
+    setTimeout(()=>{
+      planeImg.classList.remove('zoom');
+      planeBusy = false;
+    }, 2150);
+  });
+})();
+</script>
+</body>
+</html>
