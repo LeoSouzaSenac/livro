@@ -154,8 +154,6 @@
     background:var(--paper);
     box-shadow:0 8px 24px rgba(0,0,0,.28);
   }
-  /* Um pequeno translateZ impede o Chrome de misturar frente e verso
-     exatamente quando a folha passa pelos 90 graus. */
   .turn-side.front{ transform:rotateY(0deg) translateZ(.2px); }
   .turn-side.back{ transform:rotateY(180deg) translateZ(.2px); }
 
@@ -224,8 +222,6 @@
     pointer-events:none !important;
   }
 
-  /* Não use filter na própria folha: filter achata o preserve-3d e faz
-     a frente aparecer espelhada através do verso em alguns navegadores. */
   @keyframes turnNext{
     0%{ transform:rotateY(0deg); }
     100%{ transform:rotateY(-180deg); }
@@ -267,7 +263,6 @@
   .spine::before, .spine::after{ content:""; position:absolute; top:0; bottom:0; width:1px; background: rgba(0,0,0,.12); }
   .spine::before{ left:0; } .spine::after{ right:0; }
 
-  /* page caption text */
   .page-caption{
     position:absolute; z-index:6;
     display:flex; align-items:center; justify-content:center;
@@ -284,7 +279,6 @@
     box-shadow: 0 3px 8px rgba(61,43,31,.18);
   }
 
-  /* cards row */
   .cards{ position:absolute; z-index:6; }
   .cards img{
     position:absolute; top:0; width:100%;
@@ -304,7 +298,6 @@
   }
   .cards img.pop{ animation: cardPop .5s ease; }
 
-  /* school cutout */
   .escola-cut{
     position:absolute; z-index:4; cursor:pointer;
     transform-origin: 50% 92%;
@@ -317,7 +310,6 @@
   }
   .escola-cut.pulse{ animation: growShrink .7s ease; }
 
-  /* bus sticker */
   .bus-wrap{
     position:absolute; z-index:6;
     filter: drop-shadow(0 10px 10px rgba(0,0,0,.28));
@@ -347,7 +339,6 @@
   .wheel-inner{ width:100%; display:block; }
   @keyframes spin{ from{ transform: translate(-50%,-50%) rotate(0);} to{ transform: translate(-50%,-50%) rotate(360deg);} }
 
-  /* clouds */
   .cloud{
     position:absolute; z-index:3; cursor:pointer;
     transition: filter .2s ease;
@@ -361,7 +352,6 @@
   }
   .cloud.bounce{ animation: cloudBounce .6s ease; }
 
-  /* airplane */
   .plane-wrap{ position:absolute; z-index:6; }
   .plane-img{
     position:relative;
@@ -393,12 +383,9 @@
   }
   .zuum.show{ opacity:1; transform: scale(1.5) rotate(-4deg); }
 
-
-
   /* ---------- PÁGINA DO PARQUE / BICICLETA ---------- */
   .bike-wrap{
     position:absolute;
-    /* Metade do tamanho original: 45.8% / 2 = 22.9%. */
     left:63.65%;
     top:64.5%;
     width:22.9%;
@@ -409,74 +396,74 @@
     filter:drop-shadow(0 10px 10px rgba(0,0,0,.23));
     overflow:visible;
   }
-
   .bike-frame{
-    position:absolute;
-    inset:0;
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    display:block;
-    pointer-events:none;
-    z-index:7;
+    position:absolute; inset:0; width:100%; height:100%;
+    object-fit:contain; display:block; pointer-events:none; z-index:7;
   }
-
   .bike-wheel{
-    position:absolute;
-    width:40%;
-    aspect-ratio:1;
+    position:absolute; width:40%; aspect-ratio:1;
     transform:translate(-50%,-50%) rotate(0deg);
-    transform-origin:center;
-    cursor:pointer;
-    z-index:6;
-    border-radius:50%;
-    -webkit-tap-highlight-color:transparent;
+    transform-origin:center; cursor:pointer; z-index:6;
+    border-radius:50%; -webkit-tap-highlight-color:transparent;
   }
-
-  .bike-wheel img{
-    width:100%;
-    height:100%;
-    object-fit:contain;
-    display:block;
-    pointer-events:none;
-  }
-
-  /* Posições calculadas sobre a imagem do quadro fornecida. */
+  .bike-wheel img{ width:100%; height:100%; object-fit:contain; display:block; pointer-events:none; }
   .bike-wheel.rear{ left:3.9%; top:80.2%; }
   .bike-wheel.front{ left:97.0%; top:94.8%; }
-
   .bike-pedal{
-    position:absolute;
-    left:39.8%;
-    top:86.9%;
-    width:18%;
-    z-index:9;
+    position:absolute; left:39.8%; top:86.9%; width:18%; z-index:9;
     transform:translate(-50%,-22%) rotate(0deg);
-    transform-origin:50% 22%;
-    pointer-events:none;
+    transform-origin:50% 22%; pointer-events:none;
+  }
+  .bike-wheel:focus-visible{ outline:3px solid var(--accent); outline-offset:4px; }
+  .bike-wrap.spinning .bike-wheel{ animation:bikeWheelSpin 1.15s cubic-bezier(.32,.06,.18,1) forwards; }
+  .bike-wrap.spinning .bike-pedal{ animation:bikePedalSpin 1.15s cubic-bezier(.32,.06,.18,1) forwards; }
+  @keyframes bikeWheelSpin{ from{ transform:translate(-50%,-50%) rotate(0deg); } to{ transform:translate(-50%,-50%) rotate(720deg); } }
+  @keyframes bikePedalSpin{ from{ transform:translate(-50%,-22%) rotate(0deg); } to{ transform:translate(-50%,-22%) rotate(720deg); } }
+
+  /* ---------- PÁGINA DO MUNDO DA IMAGINAÇÃO ---------- */
+  .dragon-wrap{ position:absolute; z-index:7; cursor:pointer; -webkit-tap-highlight-color: transparent; }
+  .dragon-img{
+    width:100%; display:block;
+    filter: drop-shadow(0 14px 16px rgba(0,0,0,.25));
+    transform-origin:50% 50%;
+    animation: dragonFloat 3.6s ease-in-out infinite;
+    cursor:pointer;
+  }
+  @keyframes dragonFloat{
+    0%,100%{ transform: translateY(0) rotate(-2deg); }
+    50%{ transform: translateY(-4%) rotate(2deg); }
+  }
+  .dragon-img.swoop{ animation: dragonSwoop 1.15s cubic-bezier(.4,.05,.3,1); }
+  @keyframes dragonSwoop{
+    0%{   transform: translate(0,0) rotate(-2deg) scale(1); }
+    25%{  transform: translate(-4%,-10%) rotate(-10deg) scale(1.05); }
+    50%{  transform: translate(6%,4%) rotate(8deg) scale(1.12); }
+    75%{  transform: translate(-3%,-6%) rotate(-6deg) scale(1.05); }
+    100%{ transform: translate(0,0) rotate(-2deg) scale(1); }
   }
 
-  .bike-wheel:focus-visible{
-    outline:3px solid var(--accent);
-    outline-offset:4px;
+  .rider-wrap{ position:absolute; z-index:6; cursor:pointer; -webkit-tap-highlight-color: transparent; }
+  .rider-img{
+    width:100%; display:block;
+    filter: drop-shadow(0 10px 12px rgba(0,0,0,.22));
+    transform-origin:30% 85%;
   }
-
-  .bike-wrap.spinning .bike-wheel{
-    animation:bikeWheelSpin 1.15s cubic-bezier(.32,.06,.18,1) forwards;
+  .rider-img.charge{ animation: riderCharge .85s cubic-bezier(.3,.1,.25,1); }
+  @keyframes riderCharge{
+    0%{   transform: translate(0,0) rotate(0) scale(1); }
+    20%{  transform: translate(-2%,-3%) rotate(-4deg) scale(1.02); }
+    45%{  transform: translate(9%,0) rotate(3deg) scale(1.07); }
+    70%{  transform: translate(-3%,-1%) rotate(-2deg) scale(1.02); }
+    100%{ transform: translate(0,0) rotate(0) scale(1); }
   }
-
-  .bike-wrap.spinning .bike-pedal{
-    animation:bikePedalSpin 1.15s cubic-bezier(.32,.06,.18,1) forwards;
-  }
-
-  @keyframes bikeWheelSpin{
-    from{ transform:translate(-50%,-50%) rotate(0deg); }
-    to{ transform:translate(-50%,-50%) rotate(720deg); }
-  }
-
-  @keyframes bikePedalSpin{
-    from{ transform:translate(-50%,-22%) rotate(0deg); }
-    to{ transform:translate(-50%,-22%) rotate(720deg); }
+  .rider-wrap.princesa .rider-img{ transform-origin:70% 85%; }
+  .rider-wrap.princesa .rider-img.charge{ animation-name: riderChargeLeft; }
+  @keyframes riderChargeLeft{
+    0%{   transform: translate(0,0) rotate(0) scale(1); }
+    20%{  transform: translate(2%,-3%) rotate(4deg) scale(1.02); }
+    45%{  transform: translate(-9%,0) rotate(-3deg) scale(1.07); }
+    70%{  transform: translate(3%,-1%) rotate(2deg) scale(1.02); }
+    100%{ transform: translate(0,0) rotate(0) scale(1); }
   }
 
   /* ---------- COVER ---------- */
@@ -669,11 +656,9 @@
             <div class="bike-wheel rear" tabindex="0" role="button" aria-label="Girar as duas rodas e o pedal">
               <img src="assets/roda.png" alt="">
             </div>
-
             <div class="bike-wheel front" tabindex="0" role="button" aria-label="Girar as duas rodas e o pedal">
               <img src="assets/roda.png" alt="">
             </div>
-
             <img class="bike-frame" src="assets/bike.png" alt="Bicicleta vermelha">
             <img class="bike-pedal" src="assets/pedal.png" alt="">
           </div>
@@ -682,8 +667,50 @@
         <div class="leaf-shadow"></div>
       </div>
 
-      <!-- LEAF 4: END PLACEHOLDER -->
-      <div class="leaf" id="leaf4" style="z-index:5;">
+      <!-- LEAF 4: SPREAD D — mundo da imaginação -->
+      <div class="leaf" id="leaf4" style="z-index:8;">
+        <div class="face front">
+          <img class="spread-bg" src="assets/fantasia.jpg" alt="Colina com castelo de um lado e torre do outro, sob céu azul">
+          <div class="spine"></div>
+
+          <img id="dragaoImg" class="dragon-img" src="assets/dragao.png"
+               style="position:absolute; left:30%; top:5%; width:40%;"
+               tabindex="0" role="button" aria-label="Tocar no dragão">
+
+          <div class="rider-wrap princesa" id="princesaWrap" style="left:2.5%; top:35%; width:24%;" tabindex="0" role="button" aria-label="Tocar na princesa">
+            <img class="rider-img" id="princesaImg" src="assets/princesa.png" alt="">
+          </div>
+
+          <div class="rider-wrap cavaleiro" id="cavaleiroWrap" style="left:73.5%; top:35%; width:24%;" tabindex="0" role="button" aria-label="Tocar no cavaleiro">
+            <img class="rider-img" id="cavaleiroImg" src="assets/cavaleiro.png" alt="">
+          </div>
+
+          <div class="page-caption" style="left:5%; top:63%; width:40%; height:6%;">
+            <span>AO MUNDO DA IMAGINAÇÃO</span>
+          </div>
+          <div class="cards" style="left:8%; bottom:8.2%; width:11%; height:20%;">
+            <img src="assets/CARD_MUNDO.png" tabindex="0" role="button" aria-label="Cartão: mundo">
+          </div>
+          <div class="cards" style="left:20.5%; bottom:8.2%; width:11%; height:20%;">
+            <img src="assets/CARD_IMAGINACAO.png" tabindex="0" role="button" aria-label="Cartão: imaginação">
+          </div>
+
+          <div class="page-caption" style="left:55%; top:63%; width:40%; height:6%;">
+            <span>VOU DE DRAGÃO!</span>
+          </div>
+          <div class="cards" style="left:58.5%; bottom:8.2%; width:11%; height:20%;">
+            <img src="assets/CARD_VOU.png" tabindex="0" role="button" aria-label="Cartão: vou">
+          </div>
+          <div class="cards" style="left:71%; bottom:8.2%; width:11%; height:20%;">
+            <img src="assets/CARD_DRAGAO.png" tabindex="0" role="button" aria-label="Cartão: dragão">
+          </div>
+        </div>
+        <div class="face back"></div>
+        <div class="leaf-shadow"></div>
+      </div>
+
+      <!-- LEAF 5: END PLACEHOLDER -->
+      <div class="leaf" id="leaf5" style="z-index:5;">
         <div class="face front end-face">
           <h2>continua…</h2>
         </div>
@@ -804,7 +831,6 @@
     page.addEventListener('animationend', finishTurn, {once:true});
     requestAnimationFrame(()=>requestAnimationFrame(()=>page.classList.add('turning')));
 
-    // Segurança para navegadores que eventualmente não disparem animationend.
     setTimeout(finishTurn, 1100);
   }
 
@@ -816,7 +842,7 @@
   openBtn.addEventListener('click', (e)=>{ e.stopPropagation(); next(); });
 
   pagesStack.addEventListener('click', (e)=>{
-    if(turning || e.target.closest('button, .escola-cut, .bus-img, .wheel, .cards img, .cloud, .plane-img, .bike-wheel')) return;
+    if(turning || e.target.closest('button, .escola-cut, .bus-img, .wheel, .cards img, .cloud, .plane-img, .bike-wheel, .dragon-img, .rider-wrap')) return;
     const rect = pagesStack.getBoundingClientRect();
     const x = e.clientX - rect.left;
     if(x > rect.width * .88) next();
@@ -831,7 +857,7 @@
   });
 
   document.addEventListener('keydown', (e)=>{
-    if(e.target.closest('.escola-cut, .bus-img, .wheel, .cards img, .cloud, .plane-img, .bike-wheel, button')) return;
+    if(e.target.closest('.escola-cut, .bus-img, .wheel, .cards img, .cloud, .plane-img, .bike-wheel, .dragon-img, .rider-wrap, button')) return;
     if(e.key === 'ArrowRight') next();
     if(e.key === 'ArrowLeft') prev();
   });
@@ -927,6 +953,58 @@
     noise.start(now); noise.stop(now+dur);
   }
 
+  function playRoar(){
+    if(!soundOn) return;
+    const c = ctx(); const now = c.currentTime; const dur = 0.8;
+    const osc = c.createOscillator();
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(160, now);
+    osc.frequency.exponentialRampToValueAtTime(60, now+dur*0.7);
+    osc.frequency.exponentialRampToValueAtTime(40, now+dur);
+    const oscFilter = c.createBiquadFilter();
+    oscFilter.type = 'lowpass';
+    oscFilter.frequency.setValueAtTime(900, now);
+    oscFilter.frequency.exponentialRampToValueAtTime(220, now+dur);
+    const gain = c.createGain();
+    gain.gain.setValueAtTime(0.0001, now);
+    gain.gain.linearRampToValueAtTime(0.4, now+0.08);
+    gain.gain.linearRampToValueAtTime(0.28, now+dur*0.6);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+    osc.connect(oscFilter).connect(gain).connect(c.destination);
+    osc.start(now); osc.stop(now+dur);
+
+    const bufferSize = c.sampleRate * dur;
+    const buffer = c.createBuffer(1, bufferSize, c.sampleRate);
+    const data = buffer.getChannelData(0);
+    for(let i=0;i<bufferSize;i++){ data[i] = (Math.random()*2-1) * 0.4; }
+    const noise = c.createBufferSource(); noise.buffer = buffer;
+    const noiseFilter = c.createBiquadFilter();
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.setValueAtTime(500, now);
+    noiseFilter.frequency.exponentialRampToValueAtTime(150, now+dur);
+    const noiseGain = c.createGain();
+    noiseGain.gain.setValueAtTime(0.0001, now);
+    noiseGain.gain.linearRampToValueAtTime(0.18, now+0.1);
+    noiseGain.gain.exponentialRampToValueAtTime(0.0001, now+dur);
+    noise.connect(noiseFilter).connect(noiseGain).connect(c.destination);
+    noise.start(now); noise.stop(now+dur);
+  }
+
+  function playClang(){
+    if(!soundOn) return;
+    const c = ctx(); const now = c.currentTime;
+    [1800, 2600, 3600].forEach((freq, idx)=>{
+      const osc = c.createOscillator(); const gain = c.createGain();
+      osc.type = 'triangle'; osc.frequency.value = freq;
+      const start = now + idx*0.012;
+      gain.gain.setValueAtTime(0.0001, start);
+      gain.gain.linearRampToValueAtTime(idx===0? 0.3 : 0.16, start + 0.008);
+      gain.gain.exponentialRampToValueAtTime(0.0001, start + 0.35);
+      osc.connect(gain).connect(c.destination);
+      osc.start(start); osc.stop(start + 0.4);
+    });
+  }
+
   /* ---------------- INTERACTIONS --------------- */
   function bindTap(el, fn){
     el.addEventListener('click', (e)=>{ e.stopPropagation(); fn(); });
@@ -962,23 +1040,16 @@
     });
   });
 
-
-  /* Ao clicar em qualquer pneu da bicicleta, as duas rodas e o pedal giram. */
   const bikeWrap = document.getElementById('bikeWrap');
   let bikeSpinTimer = null;
-
   function spinWholeBike(){
     if(!bikeWrap) return;
     clearTimeout(bikeSpinTimer);
     bikeWrap.classList.remove('spinning');
     void bikeWrap.offsetWidth;
     bikeWrap.classList.add('spinning');
-
-    bikeSpinTimer = setTimeout(()=>{
-      bikeWrap.classList.remove('spinning');
-    }, 1200);
+    bikeSpinTimer = setTimeout(()=>{ bikeWrap.classList.remove('spinning'); }, 1200);
   }
-
   document.querySelectorAll('.bike-wheel').forEach(wheel=>{
     bindTap(wheel, spinWholeBike);
   });
@@ -999,20 +1070,44 @@
     planeImg.classList.remove('zoom'); void planeImg.offsetWidth;
     planeImg.classList.add('zoom');
     setTimeout(()=> playWhoosh(), 2100*0.22);
-
-    setTimeout(()=>{
-      zuum.classList.add('show');
-    }, 2100*0.48);
-
-    setTimeout(()=>{
-      zuum.classList.remove('show');
-    }, 2100*0.48 + 500);
-
-    setTimeout(()=>{
-      planeImg.classList.remove('zoom');
-      planeBusy = false;
-    }, 2150);
+    setTimeout(()=>{ zuum.classList.add('show'); }, 2100*0.48);
+    setTimeout(()=>{ zuum.classList.remove('show'); }, 2100*0.48 + 500);
+    setTimeout(()=>{ planeImg.classList.remove('zoom'); planeBusy = false; }, 2150);
   });
+
+  const dragaoImg = document.getElementById('dragaoImg');
+  let dragonBusy = false;
+  bindTap(dragaoImg, ()=>{
+    if(dragonBusy) return;
+    dragonBusy = true;
+    dragaoImg.classList.add('swoop');
+    playRoar();
+    dragaoImg.addEventListener('animationend', function onEnd(){
+      dragaoImg.classList.remove('swoop');
+      dragaoImg.removeEventListener('animationend', onEnd);
+      dragonBusy = false;
+    }, {once:true});
+  });
+
+  function bindRider(wrapId, imgId){
+    const wrap = document.getElementById(wrapId);
+    const img = document.getElementById(imgId);
+    if(!wrap || !img) return;
+    let busy = false;
+    bindTap(wrap, ()=>{
+      if(busy) return;
+      busy = true;
+      img.classList.add('charge');
+      playClang();
+      img.addEventListener('animationend', function onEnd(){
+        img.classList.remove('charge');
+        img.removeEventListener('animationend', onEnd);
+        busy = false;
+      }, {once:true});
+    });
+  }
+  bindRider('princesaWrap','princesaImg');
+  bindRider('cavaleiroWrap','cavaleiroImg');
 })();
 </script>
 </body>
