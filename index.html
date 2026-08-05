@@ -525,6 +525,239 @@
     .book{ padding:4%; }
     .page-caption{ font-size: 11px !important; }
   }
+
+
+  /* ================================================================
+     VISUAL DE LIVRO FÍSICO — usa capa.png, livro.png e máscara correta das janelas
+     ================================================================ */
+  html,body{
+    background:
+      radial-gradient(ellipse at 50% 38%, rgba(118,76,48,.28), transparent 48%),
+      linear-gradient(135deg, #171019 0%, #241722 48%, #100b12 100%);
+  }
+
+  .stage{
+    width:min(96vw, calc((92vh - 3.8rem) * 1.433333));
+    gap:.75rem;
+  }
+
+  .book{
+    padding:0;
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    overflow:visible;
+  }
+  .book::before{ display:none; }
+
+  .page-block{
+    padding:0;
+    border-radius:0;
+    overflow:visible;
+    background:transparent;
+    box-shadow:none;
+  }
+
+  .pages-stack{
+    aspect-ratio:1118 / 780;
+    overflow:visible;
+    transform-style:preserve-3d;
+    transition:transform 1.08s cubic-bezier(.58,.02,.22,1);
+    filter:drop-shadow(0 24px 24px rgba(0,0,0,.34));
+  }
+  .pages-stack::before,
+  .pages-stack::after{ display:none; }
+
+  /* No estado fechado, desloca o canvas para centralizar a metade direita,
+     onde está a capa fornecida. Ao abrir, o canvas volta ao centro. */
+  .pages-stack.is-closed{ transform:translateX(-24.7%); }
+  .pages-stack.is-open{ transform:translateX(0); }
+
+  .face{
+    border-radius:0;
+    background:transparent;
+    box-shadow:none;
+    overflow:hidden;
+  }
+
+  /* As imagens e elementos de cada página aparecem somente dentro das duas
+     janelas transparentes do livro. A máscara é opaca nas janelas e
+     transparente no restante; o frame físico permanece por cima. */
+  .face.front:not(.cover-face){
+    -webkit-mask-image:url('assets/janelas-paginas-v2.png');
+    mask-image:url('assets/janelas-paginas-v2.png');
+    -webkit-mask-size:100% 100%;
+    mask-size:100% 100%;
+    -webkit-mask-repeat:no-repeat;
+    mask-repeat:no-repeat;
+  }
+
+  .spine{ display:none; }
+
+  .physical-book-frame{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    z-index:130;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .32s ease;
+    user-select:none;
+  }
+  .pages-stack.is-open .physical-book-frame,
+  .pages-stack.is-opening .physical-book-frame,
+  .pages-stack.is-closing .physical-book-frame{ opacity:1; }
+
+  /* Mantém o frame físico acima da virada das páginas internas. */
+  .turn-base{ z-index:110; }
+  .turn-layer{ z-index:120; }
+  .turn-side{ background:transparent; box-shadow:none; }
+
+  .leaf.under-cover{
+    opacity:1;
+    visibility:visible;
+    pointer-events:none;
+    z-index:1 !important;
+  }
+
+  /* A capa é um plano 3D do tamanho total do spread. Como a metade esquerda
+     do PNG é transparente, somente o livro fechado aparece. */
+  .leaf.cover-leaf.active,
+  .leaf.cover-leaf.cover-transition{
+    opacity:1;
+    visibility:visible;
+    z-index:150 !important;
+  }
+  .leaf.cover-leaf.cover-transition{ pointer-events:none; }
+
+  .cover-face{
+    background:transparent !important;
+    display:block;
+    overflow:visible;
+    perspective:2800px;
+  }
+
+  .physical-cover-flap{
+    position:absolute;
+    inset:0;
+    transform-origin:50% 50%;
+    transform-style:preserve-3d;
+    -webkit-transform-style:preserve-3d;
+    will-change:transform;
+  }
+  .physical-cover-flap.opened{ transform:rotateY(-180deg); }
+  .physical-cover-flap.opening{
+    animation:openPhysicalCover 1.08s cubic-bezier(.58,.02,.22,1) forwards;
+  }
+  .physical-cover-flap.closing{
+    animation:closePhysicalCover 1.08s cubic-bezier(.58,.02,.22,1) forwards;
+  }
+
+  .physical-cover-side{
+    position:absolute;
+    inset:0;
+    backface-visibility:hidden;
+    -webkit-backface-visibility:hidden;
+    transform-style:preserve-3d;
+    -webkit-transform-style:preserve-3d;
+    pointer-events:none;
+  }
+  .physical-cover-side.front{ transform:rotateY(0deg) translateZ(.35px); }
+  .physical-cover-side.back{ transform:rotateY(180deg) translateZ(.35px); }
+
+  .physical-cover-side.front img{
+    width:100%;
+    height:100%;
+    display:block;
+    object-fit:contain;
+    user-select:none;
+    filter:drop-shadow(0 22px 24px rgba(0,0,0,.34));
+  }
+
+  /* Verso interno da capa, visível durante a abertura. */
+  .physical-cover-side.back::before{
+    content:"";
+    position:absolute;
+    left:50%;
+    top:1.2%;
+    width:49.2%;
+    height:97.2%;
+    border-radius:2.2% 1.4% 1.4% 2.2%;
+    background:
+      linear-gradient(90deg, rgba(64,28,13,.52), transparent 8%),
+      radial-gradient(ellipse at 45% 42%, #a96839 0%, #82431f 58%, #5a2b16 100%);
+    box-shadow:
+      inset 0 0 0 3px rgba(227,180,73,.65),
+      inset 0 0 0 12px rgba(65,28,13,.28),
+      0 14px 24px rgba(0,0,0,.26);
+  }
+  .physical-cover-side.back::after{
+    content:"";
+    position:absolute;
+    left:52.4%;
+    top:4.6%;
+    width:44.4%;
+    height:90%;
+    border:2px solid rgba(230,190,92,.48);
+    border-radius:1.5%;
+  }
+
+  .cover-click-target{
+    position:absolute;
+    left:44%;
+    top:0;
+    width:56%;
+    height:100%;
+    z-index:8;
+    border:0;
+    padding:0;
+    background:transparent;
+    cursor:pointer;
+    -webkit-tap-highlight-color:transparent;
+  }
+  .cover-click-target:focus-visible{
+    outline:4px solid var(--gold-soft);
+    outline-offset:-14px;
+    border-radius:3%;
+  }
+
+  @keyframes openPhysicalCover{
+    0%{ transform:rotateY(0deg); }
+    42%{ transform:rotateY(-82deg); }
+    58%{ transform:rotateY(-104deg); }
+    100%{ transform:rotateY(-180deg); }
+  }
+  @keyframes closePhysicalCover{
+    0%{ transform:rotateY(-180deg); }
+    42%{ transform:rotateY(-104deg); }
+    58%{ transform:rotateY(-82deg); }
+    100%{ transform:rotateY(0deg); }
+  }
+
+  /* O conteúdo do fim também fica dentro das janelas do livro. */
+  .end-face{
+    background:linear-gradient(160deg,#fbf3de,#efe2c3);
+  }
+
+  /* Controles mais discretos para não competir com o livro. */
+  .toolbar{
+    justify-content:center;
+    gap:.75rem;
+    flex-wrap:wrap;
+  }
+  .toolbar .group{ gap:.45rem; }
+  .page-indicator{
+    min-width:7.2rem;
+    text-align:center;
+  }
+
+  @media (max-width:760px){
+    .stage{ width:98vw; }
+    .pages-stack.is-closed{ transform:translateX(-24.7%) scale(.98); }
+  }
+
 </style>
 </head>
 <body>
@@ -541,17 +774,18 @@
 
   <div class="book">
    <div class="page-block">
-    <div class="pages-stack" id="pagesStack">
+    <div class="pages-stack is-closed" id="pagesStack">
 
-      <!-- LEAF 0: COVER -->
-      <div class="leaf" id="leaf0" style="z-index:40;">
+      <!-- LEAF 0: CAPA FÍSICA FECHADA -->
+      <div class="leaf cover-leaf" id="leaf0" style="z-index:40;">
         <div class="face front cover-face">
-          <div class="cover-frame">
-            <img class="bus-emblem" src="assets/onibus.png" alt="">
-            <h1>À Escola de Ônibus</h1>
-            <div class="sub">um livrinho para abrir, clicar e ouvir</div>
-            <button class="open-hint" id="openBtn">Abrir o livro →</button>
+          <div class="physical-cover-flap" id="coverFlap">
+            <div class="physical-cover-side front">
+              <img src="assets/capa.png" alt="Capa do livro À Escola de Ônibus">
+            </div>
+            <div class="physical-cover-side back" aria-hidden="true"></div>
           </div>
+          <button class="cover-click-target" id="openBtn" aria-label="Abrir o livro"></button>
         </div>
         <div class="face back"></div>
         <div class="leaf-shadow"></div>
@@ -717,6 +951,9 @@
         <div class="face back"></div>
       </div>
 
+      <!-- Frame físico fixo; as imagens das páginas aparecem pelos vazados. -->
+      <img class="physical-book-frame" id="physicalBookFrame" src="assets/livro.png" alt="" aria-hidden="true">
+
     </div>
    </div>
   </div>
@@ -736,6 +973,8 @@
   const soundToggle = document.getElementById('soundToggle');
   const pageIndicator = document.getElementById('pageIndicator');
   const pagesStack = document.getElementById('pagesStack');
+  const coverFlap = document.getElementById('coverFlap');
+  const coverLeaf = document.getElementById('leaf0');
 
   function stripCloneState(root){
     root.querySelectorAll('[id]').forEach(el=>el.removeAttribute('id'));
@@ -834,12 +1073,72 @@
     setTimeout(finishTurn, 1100);
   }
 
-  function next(){ makeTurn('next'); }
-  function prev(){ makeTurn('prev'); }
+  function openPhysicalBook(){
+    if(turning || current !== 0) return;
+
+    turning = true;
+    render();
+
+    // Deixa a primeira dupla de páginas pronta por baixo da capa.
+    leaves[1].classList.add('under-cover');
+    pagesStack.classList.remove('is-closed', 'is-closing');
+    pagesStack.classList.add('is-open', 'is-opening');
+
+    coverFlap.classList.remove('closing', 'opened', 'opening');
+    void coverFlap.offsetWidth;
+    coverFlap.classList.add('opening');
+
+    setTimeout(()=>{
+      current = 1;
+      leaves[1].classList.remove('under-cover');
+      coverFlap.classList.remove('opening');
+      coverFlap.classList.add('opened');
+      pagesStack.classList.remove('is-opening');
+      turning = false;
+      render();
+    }, 1100);
+  }
+
+  function closePhysicalBook(){
+    if(turning || current !== 1) return;
+
+    turning = true;
+    render();
+
+    // A primeira página continua visível enquanto a capa fecha por cima.
+    coverLeaf.classList.add('cover-transition');
+    coverFlap.classList.remove('opening', 'closing');
+    coverFlap.classList.add('opened');
+    void coverFlap.offsetWidth;
+    coverFlap.classList.remove('opened');
+    coverFlap.classList.add('closing');
+
+    pagesStack.classList.remove('is-open', 'is-opening');
+    pagesStack.classList.add('is-closed', 'is-closing');
+
+    setTimeout(()=>{
+      current = 0;
+      coverLeaf.classList.remove('cover-transition');
+      coverFlap.classList.remove('closing');
+      pagesStack.classList.remove('is-closing');
+      turning = false;
+      render();
+    }, 1100);
+  }
+
+  function next(){
+    if(current === 0) openPhysicalBook();
+    else makeTurn('next');
+  }
+
+  function prev(){
+    if(current === 1) closePhysicalBook();
+    else makeTurn('prev');
+  }
 
   nextBtn.addEventListener('click', next);
   prevBtn.addEventListener('click', prev);
-  openBtn.addEventListener('click', (e)=>{ e.stopPropagation(); next(); });
+  openBtn.addEventListener('click', (e)=>{ e.stopPropagation(); openPhysicalBook(); });
 
   pagesStack.addEventListener('click', (e)=>{
     if(turning || e.target.closest('button, .escola-cut, .bus-img, .wheel, .cards img, .cloud, .plane-img, .bike-wheel, .dragon-img, .rider-wrap')) return;
